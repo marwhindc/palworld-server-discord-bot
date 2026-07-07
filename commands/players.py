@@ -43,7 +43,8 @@ class PlayersCog(commands.Cog):
             return
 
         # 2. Check if Palworld REST API is online
-        is_online = await self.palworld_service.is_server_online()
+        ip = await self.gcp_service.get_external_ip()
+        is_online = await self.palworld_service.is_server_online(ip)
         if not is_online:
             await interaction.followup.send(
                 embed=error_embed(
@@ -55,7 +56,7 @@ class PlayersCog(commands.Cog):
 
         # 3. Retrieve players
         try:
-            players = await self.palworld_service.get_players()
+            players = await self.palworld_service.get_players(ip)
         except Exception as e:
             await interaction.followup.send(
                 embed=error_embed(

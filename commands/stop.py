@@ -59,10 +59,11 @@ class StopCog(commands.Cog):
             return
 
         # 3. Check for active players if Palworld service is online
-        palworld_online = await self.palworld_service.is_server_online()
+        ip = await self.gcp_service.get_external_ip()
+        palworld_online = await self.palworld_service.is_server_online(ip)
         if palworld_online:
             try:
-                players = await self.palworld_service.get_players()
+                players = await self.palworld_service.get_players(ip)
                 if len(players) > 0:
                     player_names = ", ".join([p.get("name", "Unknown") for p in players])
                     await interaction.response.send_message(
@@ -106,12 +107,12 @@ class StopCog(commands.Cog):
                 )
             )
             # Send shutdown command (5-second grace period)
-            success = await self.palworld_service.shutdown(waittime=5, message="Discord /stop command triggered. Saving & Shutting down.")
+            success = await self.palworld_service.shutdown(waittime=5, message="Discord /stop command triggered. Saving & Shutting down.", ip=ip)
             if success:
                 # Wait for Palworld service to stop responding (or up to 10 seconds)
                 for _ in range(10):
                     await asyncio.sleep(1)
-                    if not await self.palworld_service.is_server_online():
+                    if not await self.palworld_service.is_server_online(ip):
                         break
             else:
                 await interaction.followup.send(

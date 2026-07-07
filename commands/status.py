@@ -70,17 +70,17 @@ class StatusCog(commands.Cog):
             return
 
         # 2. VM is Running - Gather Further Details
-        ip = await self.gcp_service.get_external_ip() or "Unknown IP"
+        ip = await self.gcp_service.get_external_ip()
         
         # Check Palworld REST API
-        is_online = await self.palworld_service.is_server_online()
+        is_online = await self.palworld_service.is_server_online(ip)
         
         if not is_online:
             fields = [
                 {"name": "VM State", "value": "🟢 `RUNNING`", "inline": True},
                 {"name": "Palworld State", "value": "🟡 `STARTING/OFFLINE`", "inline": True},
                 {"name": "Zone", "value": f"`{config.GCP_ZONE}`", "inline": True},
-                {"name": "External IP", "value": f"`{ip}`", "inline": True},
+                {"name": "External IP", "value": f"`{ip or 'Unknown IP'}`", "inline": True},
                 {"name": "Port", "value": "`8211`", "inline": True}
             ]
             await interaction.followup.send(
@@ -93,7 +93,7 @@ class StatusCog(commands.Cog):
             return
 
         # 3. Server is online - Get metrics
-        metrics = await self.palworld_service.get_metrics()
+        metrics = await self.palworld_service.get_metrics(ip)
         
         if metrics:
             players_online = metrics.get("currentplayernum", 0)
@@ -106,7 +106,7 @@ class StatusCog(commands.Cog):
             fps_str = f"`{server_fps:.1f}`" if isinstance(server_fps, (int, float)) else f"`{server_fps}`"
         else:
             # Fallback if metrics endpoints fails but is_online succeeded
-            players_online = await self.palworld_service.get_player_count()
+            players_online = await self.palworld_service.get_player_count(ip)
             player_str = f"`{players_online}`"
             uptime_str = "`N/A`"
             fps_str = "`N/A`"
