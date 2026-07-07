@@ -15,6 +15,7 @@ class StopCog(commands.Cog):
         self.bot = bot
         self.gcp_service = bot.gcp_service
         self.palworld_service = bot.palworld_service
+        self.usage_service = bot.usage_service
 
     @app_commands.command(name="stop", description="Stops the Palworld server and virtual machine (Admins only).")
     @check_admin_only()
@@ -152,6 +153,8 @@ class StopCog(commands.Cog):
                 )
             )
             return
+
+        self.usage_service.record_stop()
 
         shutdown_duration = time.time() - shutdown_start_time
         bot_logger.info(f"Palworld server successfully stopped in {shutdown_duration:.1f} seconds.")

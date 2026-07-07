@@ -15,6 +15,7 @@ class StartCog(commands.Cog):
         # Services will be resolved from the bot instance
         self.gcp_service = bot.gcp_service
         self.palworld_service = bot.palworld_service
+        self.usage_service = bot.usage_service
 
     @app_commands.command(name="start", description="Starts the GCE VM and Palworld server.")
     @check_channel_and_role()
@@ -50,6 +51,7 @@ class StartCog(commands.Cog):
             return
 
         if status == "RUNNING":
+            self.usage_service.record_start()
             online = await self.palworld_service.is_server_online()
             if online:
                 ip = await self.gcp_service.get_external_ip() or "Unknown IP"
@@ -133,6 +135,8 @@ class StartCog(commands.Cog):
                 )
             )
             return
+
+        self.usage_service.record_start()
 
         # Fetch IP
         ip = await self.gcp_service.get_external_ip() or "Unknown IP"

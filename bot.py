@@ -1,10 +1,12 @@
 import sys
+import asyncio
 import discord
-from discord.ext import commands
+from discord.ext import commands, tasks
 from discord import app_commands
 from config import Config
 from services.gcp import GCPService
 from services.palworld import PalworldService
+from services.usage import UsageService
 from utils.logger import bot_logger
 from utils.embeds import error_embed
 
@@ -18,7 +20,7 @@ class PalworldBot(commands.Bot):
         super().__init__(command_prefix="!", intents=intents)
         self.config = config
         
-        # Inject GCP and Palworld services
+        # Inject GCP, Palworld, and Usage services
         self.gcp_service = GCPService(
             project_id=config.GCP_PROJECT_ID,
             zone=config.GCP_ZONE,
@@ -29,6 +31,15 @@ class PalworldBot(commands.Bot):
             username=config.PALWORLD_REST_USERNAME,
             password=config.PALWORLD_REST_PASSWORD
         )
+        self.usage_service = UsageService()
+
+    @tasks.loop(minutes=5.0)
+    async def update_active_usage(self):
+        """Periodically flushes running time for active VM sessions to prevent data loss."""
+        try:
+            await asyncio.to_thread(self.usage_service.update_active_session)
+        except Exception as e:
+            bot_logger.error(f"Error in background active usage update task: {e}")
 
     async def setup_hook(self):
         """Standard discord.py hook to load extensions and sync command tree."""
@@ -37,8 +48,12 @@ class PalworldBot(commands.Bot):
             "commands.status",
             "commands.players",
             "commands.stop",
-            "commands.help"
+            "commands.help",
+            "commands.cost"
         ]
+        
+        # Start background task loop
+        self.update_active_usage.start()
         
         for ext in initial_extensions:
             try:

@@ -18,6 +18,9 @@ class Config:
     PALWORLD_REST_PASSWORD: str
     START_COOLDOWN: int
     STOP_COOLDOWN: int
+    VM_HOURLY_RATE: float
+    DISK_SIZE_GB: int
+    DISK_GB_MONTHLY_RATE: float
 
     @classmethod
     def load_from_env(cls) -> "Config":
@@ -57,6 +60,21 @@ class Config:
         except ValueError:
             stop_cooldown = 300
 
+        try:
+            vm_hourly_rate = float(os.getenv("VM_HOURLY_RATE", "0.1340"))
+        except ValueError:
+            vm_hourly_rate = 0.1340
+
+        try:
+            disk_size_gb = int(os.getenv("DISK_SIZE_GB", "50"))
+        except ValueError:
+            disk_size_gb = 50
+
+        try:
+            disk_gb_monthly_rate = float(os.getenv("DISK_GB_MONTHLY_RATE", "0.10"))
+        except ValueError:
+            disk_gb_monthly_rate = 0.10
+
         # Standardize rest URL by stripping trailing slash
         rest_url = os.getenv("PALWORLD_REST_URL", "").rstrip("/")
 
@@ -72,4 +90,7 @@ class Config:
             PALWORLD_REST_PASSWORD=os.getenv("PALWORLD_REST_PASSWORD", ""),
             START_COOLDOWN=start_cooldown,
             STOP_COOLDOWN=stop_cooldown,
+            VM_HOURLY_RATE=vm_hourly_rate,
+            DISK_SIZE_GB=disk_size_gb,
+            DISK_GB_MONTHLY_RATE=disk_gb_monthly_rate,
         )
