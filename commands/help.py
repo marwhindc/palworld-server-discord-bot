@@ -43,6 +43,12 @@ class HelpCog(commands.Cog):
                 "inline": False
             },
             {
+                "name": "💰 `/cost`",
+                "value": "Checks the estimated Google Cloud costs incurred by the server this month.\n"
+                         f"• *Permissions:* Member must have `{config.ALLOWED_ROLE}` role",
+                "inline": False
+            },
+            {
                 "name": "❓ `/help`",
                 "value": "Displays this help menu with commands, requirements, and permissions.",
                 "inline": False
