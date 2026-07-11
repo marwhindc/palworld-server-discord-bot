@@ -52,15 +52,15 @@ class StartCog(commands.Cog):
 
         if status == "RUNNING":
             self.usage_service.record_start()
-            online = await self.palworld_service.is_server_online()
+            ip = await self.gcp_service.get_external_ip()
+            online = await self.palworld_service.is_server_online(ip)
             if online:
-                ip = await self.gcp_service.get_external_ip() or "Unknown IP"
-                player_count = await self.palworld_service.get_player_count()
+                player_count = await self.palworld_service.get_player_count(ip)
                 await interaction.response.send_message(
                     embed=success_embed(
                         "Server Already Running",
                         f"The server is already running and fully operational!\n\n"
-                        f"**IP:** `{ip}`\n"
+                        f"**IP:** `{ip or 'Unknown IP'}`\n"
                         f"**Port:** `8211`\n"
                         f"**Current Players:** `{player_count}`"
                     )
@@ -78,14 +78,13 @@ class StartCog(commands.Cog):
                 # Cooldown set since we are waiting/running
                 cooldown_manager.update_cooldown(user.id, "start")
                 
-                api_ready = await self.palworld_service.wait_until_ready(timeout=180)
+                api_ready = await self.palworld_service.wait_until_ready(timeout=180, ip=ip)
                 if api_ready:
-                    ip = await self.gcp_service.get_external_ip() or "Unknown IP"
                     await interaction.followup.send(
                         embed=success_embed(
                             "Server Ready",
                             f"The Palworld server has finished initializing!\n\n"
-                            f"**IP:** `{ip}`\n"
+                            f"**IP:** `{ip or 'Unknown IP'}`\n"
                             f"**Port:** `8211`\n"
                             f"**Current Players:** `0`"
                         )
@@ -139,25 +138,26 @@ class StartCog(commands.Cog):
         self.usage_service.record_start()
 
         # Fetch IP
-        ip = await self.gcp_service.get_external_ip() or "Unknown IP"
+        ip = await self.gcp_service.get_external_ip()
+        ip_display = ip or "Unknown IP"
 
         # Update status
         await interaction.followup.send(
             embed=info_embed(
                 "VM Active - Booting Game Server",
-                f"Virtual machine is now RUNNING at `{ip}`.\nWaiting for the Palworld game service to boot..."
+                f"Virtual machine is now RUNNING at `{ip_display}`.\nWaiting for the Palworld game service to boot..."
             )
         )
 
         # Poll Palworld REST API until responsive
-        api_ready = await self.palworld_service.wait_until_ready(timeout=180)
+        api_ready = await self.palworld_service.wait_until_ready(timeout=180, ip=ip)
         if not api_ready:
             # We don't reset cooldown here because the VM did start and is running,
             # which consumes resources and prevents startup spamming.
             await interaction.followup.send(
                 embed=error_embed(
                     "Game Service Timeout",
-                    f"VM is running at `{ip}`, but the Palworld server REST API is not responding. "
+                    f"VM is running at `{ip_display}`, but the Palworld server REST API is not responding. "
                     "It might still be loading database assets."
                 )
             )
@@ -171,7 +171,7 @@ class StartCog(commands.Cog):
             embed=success_embed(
                 "Server Ready",
                 f"The Palworld dedicated server is online!\n\n"
-                f"**IP:** `{ip}`\n"
+                f"**IP:** `{ip_display}`\n"
                 f"**Port:** `8211`\n"
                 f"**Estimated Startup Time:** `{int(startup_duration)}` seconds\n"
                 f"**Current Players:** `0`"
